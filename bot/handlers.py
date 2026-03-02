@@ -76,6 +76,10 @@ async def _edit_ui(context, chat_id, text, reply_markup, parse_mode="Markdown"):
     )
     context.user_data["ui_message_id"] = msg.message_id
 
+def escape_md(text: str) -> str:
+    """Escape special characters for Telegram MarkdownV2."""
+    special = r'\_*[]()~`>#+-=|{}.!'
+    return ''.join(f'\\{c}' if c in special else c for c in str(text))
 
 # ========================
 # START
@@ -147,9 +151,10 @@ async def handle_menu_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
             f"📌 *{video['title']}*\n"
             f"📂 Topic: {video['topic_name']}\n"
             f"⏱ Position: {pos_str}\n\n"
-            f"🔗 {url}",
+            f"🔗 {escape_md(url)}",
             reply_markup=build_main_menu(),
-            parse_mode="Markdown",
+            parse_mode="MarkdownV2",
+            disable_web_page_preview=True,
         )
 
     # -------- BACK TO MENU --------
@@ -226,9 +231,10 @@ async def handle_video_callbacks(update: Update, context: ContextTypes.DEFAULT_T
             f"▶️ *Resume*\n\n"
             f"📌 *{video['title']}*\n"
             f"⏱ Position: {pos_str}\n\n"
-            f"🔗 {url}",
-            reply_markup=build_main_menu(),
-            parse_mode="Markdown",
+        f"🔗 {escape_md(url)}",
+        reply_markup=build_main_menu(),
+        parse_mode="MarkdownV2",
+        disable_web_page_preview=True,
         )
 
     elif action == "vcomplete":
@@ -297,15 +303,15 @@ async def _save_new_video(context, chat_id, topic_id, video_id, timestamp, query
 
     pos_str = format_duration(timestamp)
     text = (
-        f"✅ *Video added!*\n\n"
-        f"📌 *{title}*\n"
-        f"⏱ Starting position: *{pos_str}*"
+        f"✅ *Video added\\!*\n\n"
+        f"📌 *{escape_md(title)}*\n"
+        f"⏱ Starting position: *{escape_md(pos_str)}*"
     )
 
     if query:
-        await query.edit_message_text(text, reply_markup=build_main_menu(), parse_mode="Markdown")
+        await query.edit_message_text(text, reply_markup=build_main_menu(), parse_mode="MarkdownV2")
     else:
-        await _edit_ui(context, chat_id, text, build_main_menu())
+        await _edit_ui(context, chat_id, text, build_main_menu(), parse_mode="MarkdownV2")
 
 
 # ========================

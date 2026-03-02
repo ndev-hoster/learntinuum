@@ -1,27 +1,19 @@
 import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from dotenv import load_dotenv
-import os
+from telegram.ext import ApplicationBuilder
+from config import BOT_TOKEN
+from db.database import init_db
+from bot.handlers import register_handlers
 
-load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
+def main():
+    init_db()
 
-# learntinuum=telegram.bot
-token= os.environ.get('TELE_BOT_TOKEN')
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    register_handlers(app)
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+    print("Bot initialized successfully.")
+    app.run_polling()
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
-
-if __name__ == '__main__':
-    application = ApplicationBuilder().token(token).build()
-    
-    start_handler = CommandHandler('start', start)
-    application.add_handler(start_handler)
-    
-    application.run_polling()
+if __name__ == "__main__":
+    main()

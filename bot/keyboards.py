@@ -21,6 +21,8 @@ def build_topics_keyboard(topics, callback_prefix: str = "topic") -> InlineKeybo
                 callback_data=f"{callback_prefix}_{topic['id']}",
             )
         ])
+    if callback_prefix == "picktopic":
+        keyboard.append([InlineKeyboardButton("➕ Create New Topic", callback_data="menu_new_topic_for_video")])
     keyboard.append([InlineKeyboardButton("« Back", callback_data="menu_back")])
     return InlineKeyboardMarkup(keyboard)
 
@@ -53,10 +55,6 @@ def build_videos_keyboard(videos) -> InlineKeyboardMarkup:
 
 
 def build_save_video_keyboard(active_topic, all_topics) -> InlineKeyboardMarkup:
-    """
-    Shown when user sends a URL and a topic is already active.
-    Top button = confirm current topic. Rest = switch to another. Bottom = cancel.
-    """
     keyboard = [
         [InlineKeyboardButton(
             f"✅ Save to '{active_topic['name']}'",
@@ -72,5 +70,6 @@ def build_save_video_keyboard(active_topic, all_topics) -> InlineKeyboardMarkup:
                 callback_data=f"picktopic_{topic['id']}",
             )
         ])
+    keyboard.append([InlineKeyboardButton("➕ Create New Topic", callback_data="menu_new_topic_for_video")])
     keyboard.append([InlineKeyboardButton("« Cancel", callback_data="menu_back")])
     return InlineKeyboardMarkup(keyboard)

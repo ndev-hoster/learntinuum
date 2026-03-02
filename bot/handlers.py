@@ -116,7 +116,7 @@ async def handle_menu_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
 
     # -------- VIEW TOPICS --------
     elif data == "menu_view_topics":
-        topics = get_topics(user_id)
+        topics = sorted(get_topics(user_id), key=lambda t: t["name"].lower())
         if not topics:
             await query.edit_message_text(
                 "📭 No topics yet. Add one first!",
@@ -153,6 +153,10 @@ async def handle_menu_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         )
 
     # -------- BACK TO MENU --------
+    elif data == "menu_new_topic_for_video":
+            context.user_data["state"] = "awaiting_topic_name_for_video"
+            await query.edit_message_text("📝 Send me the new topic name:")
+
     elif data == "menu_back":
         context.user_data["state"] = None
         context.user_data.pop("pending_video_id", None)
@@ -163,7 +167,6 @@ async def handle_menu_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
             reply_markup=build_main_menu(),
             parse_mode="Markdown",
         )
-
 
 # ========================
 # TOPIC SELECTION → show videos
@@ -320,22 +323,50 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ---- Topic creation flow ----
     if state == "awaiting_topic_name":
+            topic_name = text_input
+            created = create_topic(user_id, topic_name)
+            context.user_data["state"] = None
+
+            result_text = (
+                f"✅ Topic *'{topic_name}'* added!"
+                if created
+                else f"⚠️ Topic *'{topic_name}'* already exists."
+            )
+
+            await update.message.delete()
+            await _edit_ui(
+                context, chat_id,
+                result_text + "\n\nChoose next action:",
+                build_main_menu(),
+            )
+            return
+
+    if state == "awaiting_topic_name_for_video":
         topic_name = text_input
         created = create_topic(user_id, topic_name)
         context.user_data["state"] = None
 
-        result_text = (
-            f"✅ Topic *'{topic_name}'* added!"
-            if created
-            else f"⚠️ Topic *'{topic_name}'* already exists."
-        )
+        if created:
+            # freshest topic = the one just created
+            topics = sorted(get_topics(user_id), key=lambda t: t["name"].lower())
+            topic_id = topics[0]["id"]
+        else:
+            # topic already existed — find it by name
+            topics = sorted(get_topics(user_id), key=lambda t: t["name"].lower())
+            match = next((t for t in topics if t["name"] == topic_name.strip()), None)
+            topic_id = match["id"] if match else None
+
+        video_id = context.user_data.pop("pending_video_id", None)
+        timestamp = context.user_data.pop("pending_timestamp", 0)
 
         await update.message.delete()
-        await _edit_ui(
-            context, chat_id,
-            result_text + "\n\nChoose next action:",
-            build_main_menu(),
-        )
+
+        if not video_id or not topic_id:
+            await _edit_ui(context, chat_id, "❌ Something went wrong. Please send the URL again.", build_main_menu())
+            return
+
+        context.user_data["active_topic_id"] = topic_id
+        await _save_new_video(context, chat_id, topic_id, video_id, timestamp)
         return
 
     # ---- YouTube URL flow ----
@@ -363,7 +394,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         # Case 2: New video — need at least one topic
-        topics = get_topics(user_id)
+        topics = sorted(get_topics(user_id), key=lambda t: t["name"].lower())
         if not topics:
             await _edit_ui(
                 context, chat_id,

@@ -1,7 +1,6 @@
-# utils/url_parser.py
-
 from urllib.parse import urlparse, parse_qs
 import re
+
 
 def extract_video_id(url: str):
     parsed = urlparse(url)
@@ -14,6 +13,22 @@ def extract_video_id(url: str):
         return qs.get("v", [None])[0]
 
     return None
+
+
+def extract_playlist_id(url: str):
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+    return qs.get("list", [None])[0]
+
+
+def extract_playlist_index(url: str) -> int:
+    """Extract the index param from a playlist URL. Returns 0 if not present."""
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+    idx = qs.get("index", [None])[0]
+    if idx and str(idx).isdigit():
+        return int(idx) - 1  # YouTube index is 1-based, we store 0-based
+    return 0
 
 
 def extract_timestamp_seconds(url: str) -> int:

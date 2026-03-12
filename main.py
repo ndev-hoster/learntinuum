@@ -25,11 +25,16 @@ async def on_startup(app):
     set_setting("ui_message_id", str(msg.message_id))
     app.bot_data["ui_message_id"] = msg.message_id
 
+async def error_handler(update, context):
+    print(f"[ERROR] Update: {update}")
+    print(f"[ERROR] Exception: {context.error}")
+
 def main():
     init_db()
 
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
     register_handlers(app)
+    app.add_error_handler(error_handler)
 
     print("Bot initialized successfully.")
     app.run_polling()

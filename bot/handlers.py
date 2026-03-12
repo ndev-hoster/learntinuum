@@ -18,6 +18,8 @@ from db.crud import (
     get_latest_active_video,
     mark_video_completed,
     delete_video,
+    get_setting,
+    set_setting,
 )
 from config import CHAT_ID
 from bot.keyboards import (
@@ -54,8 +56,8 @@ def make_resume_url(video_id: str, position: int) -> str:
 # HELPERS
 # ========================
 
-async def _edit_ui(context, chat_id, text, reply_markup, parse_mode="Markdown"):
-    msg_id = context.user_data.get("ui_message_id")
+async def _edit_ui(context, chat_id, text, reply_markup, parse_mode="MarkdownV2"):
+    msg_id = context.user_data.get("ui_message_id") or context.bot_data.get("ui_message_id")
     if msg_id:
         try:
             await context.bot.edit_message_text(
@@ -67,7 +69,11 @@ async def _edit_ui(context, chat_id, text, reply_markup, parse_mode="Markdown"):
             )
             return
         except Exception:
-            pass
+            try:
+                await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+            except Exception:
+                pass
+
     msg = await context.bot.send_message(
         chat_id=chat_id,
         text=text,
@@ -75,6 +81,8 @@ async def _edit_ui(context, chat_id, text, reply_markup, parse_mode="Markdown"):
         parse_mode=parse_mode,
     )
     context.user_data["ui_message_id"] = msg.message_id
+    context.bot_data["ui_message_id"] = msg.message_id
+    set_setting("ui_message_id", str(msg.message_id))
 
 def escape_md(text: str) -> str:
     """Escape special characters for Telegram MarkdownV2."""
@@ -89,13 +97,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         return
 
+    old_msg_id = context.user_data.get("ui_message_id") or context.bot_data.get("ui_message_id")
+    if old_msg_id:
+        try:
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id,
+                message_id=old_msg_id,
+            )
+        except Exception:
+            pass
+
     msg = await update.effective_message.reply_text(
-        "📚 *Welcome to Learntinuum*\n\nTrack your learning progress across devices.",
+        "📚 *Welcome to Learntinuum*\n\nTrack your learning progress across devices\.",
         reply_markup=build_main_menu(),
-        parse_mode="Markdown",
+        parse_mode="MarkdownV2",
     )
 
     context.user_data["ui_message_id"] = msg.message_id
+    context.bot_data["ui_message_id"] = msg.message_id
+    set_setting("ui_message_id", str(msg.message_id))
     context.user_data["state"] = None
 
 

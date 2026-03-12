@@ -159,3 +159,22 @@ def delete_video(db_id: int):
     cursor.execute("DELETE FROM videos WHERE id = ?", (db_id,))
     conn.commit()
     conn.close()
+
+def get_setting(key: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["value"] if row else None
+
+def set_setting(key: str, value: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO settings (key, value)
+        VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    """, (key, value))
+    conn.commit()
+    conn.close()

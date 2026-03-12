@@ -147,10 +147,9 @@ async def handle_menu_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         pos_str = format_duration(video["last_position"])
 
         await query.edit_message_text(
-            f"▶️ *Resume where you left off*\n\n"
-            f"📌 *{video['title']}*\n"
-            f"📂 Topic: {video['topic_name']}\n"
-            f"⏱ Position: {pos_str}\n\n"
+            f"📌 *{escape_md(video['title'])}*\n"
+            f"📂 Topic: {escape_md(video['topic_name'])}\n"
+            f"⏱ Position: {escape_md(pos_str)}\n\n"
             f"🔗 {escape_md(url)}",
             reply_markup=build_main_menu(),
             parse_mode="MarkdownV2",
@@ -229,12 +228,12 @@ async def handle_video_callbacks(update: Update, context: ContextTypes.DEFAULT_T
 
         await query.edit_message_text(
             f"▶️ *Resume*\n\n"
-            f"📌 *{video['title']}*\n"
-            f"⏱ Position: {pos_str}\n\n"
-        f"🔗 {escape_md(url)}",
-        reply_markup=build_main_menu(),
-        parse_mode="MarkdownV2",
-        disable_web_page_preview=True,
+            f"📌 *{escape_md(video['title'])}*\n"
+            f"⏱ Position: {escape_md(pos_str)}\n\n"
+            f"🔗 {escape_md(url)}",
+            reply_markup=build_main_menu(),
+            parse_mode="MarkdownV2",
+            disable_web_page_preview=True,
         )
 
     elif action == "vcomplete":
@@ -334,9 +333,9 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["state"] = None
 
             result_text = (
-                f"✅ Topic *'{topic_name}'* added!"
+                f"✅ Topic *'{escape_md(topic_name)}'* added\\!"
                 if created
-                else f"⚠️ Topic *'{topic_name}'* already exists."
+                else f"⚠️ Topic *'{escape_md(topic_name)}'* already exists\\."
             )
 
             await update.message.delete()
@@ -344,6 +343,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context, chat_id,
                 result_text + "\n\nChoose next action:",
                 build_main_menu(),
+                parse_mode="MarkdownV2",
             )
             return
 
@@ -393,9 +393,10 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pos_str = format_duration(timestamp)
             await _edit_ui(
                 context, chat_id,
-                f"📌 Video already tracked in topic *'{existing_video['topic_name']}'*.\n\n"
-                f"⏱ Resume position updated to *{pos_str}*.",
+                f"📌 Video already tracked in topic *'{escape_md(existing_video['topic_name'])}'*\.\n\n"
+                f"⏱ Resume position updated to *{escape_md(pos_str)}*\.",
                 build_main_menu(),
+                parse_mode="MarkdownV2",
             )
             return
 
@@ -422,8 +423,9 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 keyboard = build_save_video_keyboard(active_topic, topics)
                 await _edit_ui(
                     context, chat_id,
-                    f"📂 Save to *'{active_topic['name']}'* or pick a different topic?",
+                    f"📂 Save to *'{escape_md(active_topic['name'])}'* or pick a different topic?",
                     keyboard,
+                    parse_mode="MarkdownV2",
                 )
                 return
 
